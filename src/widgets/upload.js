@@ -706,7 +706,7 @@ define([
                 tr = new Transport( opts ),
                 data = $.extend({}, opts.formData ),
                 headers = $.extend({}, opts.headers ),
-                requestAccept, ret;
+                requestAccept, ret, sendAction;
 
             block.transport = tr;
 
@@ -786,7 +786,7 @@ define([
             data = $.extend( data, {
                 id: file.id,
                 name: file.name,
-                type: file.type,
+                ftype: file.type,
                 lastModifiedDate: file.lastModifiedDate,
                 size: file.size
             });
@@ -796,15 +796,21 @@ define([
                 chunk: block.chunk
             });
 
+            // 开始发送。
+            sendAction = function () {
+                tr.appendBlob( opts.fileVal, block.blob, file.name );
+                tr.append( data );
+                tr.setRequestHeader( headers );
+                tr.send();
+            };
+
             // 在发送之间可以添加字段什么的。。。
             // 如果默认的字段不够使用，可以通过监听此事件来扩展
-            owner.trigger( 'uploadBeforeSend', block, data, headers );
+            owner.trigger( 'uploadBeforeSend', block, data, headers, sendAction );
 
-            // 开始发送。
-            tr.appendBlob( opts.fileVal, block.blob, file.name );
-            tr.append( data );
-            tr.setRequestHeader( headers );
-            tr.send();
+            if(file.getStatus() === Status.PROGRESS){
+                sendAction();
+            }
         },
 
         // 完成上传。
